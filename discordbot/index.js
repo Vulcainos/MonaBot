@@ -42,6 +42,7 @@ async function getArticles() {
 
 /**
  * Set the currencies values for USD, GBP, JPY and EUR.
+ * Set the crypto values for BTC and DOGE.
  * Default values are set to "EUR".
  * @param {*} currency_id 
  */
@@ -105,7 +106,6 @@ client.once('ready', () => {
 
     // Loop for detect time and send daily journal to users.
     setInterval(() => {
-
         var date = new Date(); //Get current date.
         date.setHours(date.getHours() + 2); //Add 2 hours to current date to get UTC+2 date.
 
@@ -127,7 +127,6 @@ client.once('ready', () => {
 });
 
 client.on('messageCreate', async message => {
-    console.log(message.content);
     if(message.content.startsWith('!meteo')) {
         if(message.content.replace("!meteo", "") == "") {
             await message.reply("Désolé, mais ce que vous avez envoyé n'est pas un nombre valide.")
@@ -221,11 +220,13 @@ client.on('messageCreate', async message => {
                     .setDescription('Laissez-moi vérifier en ' + depart_name + ` (${zipcode_depart}) Ville : ${cityInfo.nom}`)
                     .addFields(
                         { name: `Température actuelle dans le ${zipcode_depart}`, value : `:thermometer: ${weather.temp}°C ressenti ${weather.feels_temp} °C\r\n`},
-                        { name: `Météo actuelle dans le ${zipcode_depart}`, value : `Le temps est **${weather.desc}** ${emojiState}\r\n\r\n`})
+                        { name: `Météo actuelle dans le ${zipcode_depart}`, value : `Le temps est **${weather.desc}** ${emojiState}\r\n\r\n`, inline: true},
+                        { name: `Météo a`, value : `Le temps est **${weather.desc}** ${emojiState}\r\n\r\n`, inline: true})
                     .setImage(photoURL)
                     .addFields(
                         { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `:thermometer: ${forecast.temp}°C ressenti ${forecast.feels_temp} °C\r\n`},
-                        { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `Le temps sera **${forecast.desc}** ${emojiStateForecast}`})
+                        { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `Le temps sera **${forecast.desc}** ${emojiStateForecast}`, inline: true},
+                        { name: `Prévisio`, value : `Le temps sera **${forecast.desc}** ${emojiStateForecast}`, inline: true})
                     .setTimestamp()
                     .setFooter({ text: 'MonaBot météo fonctionne avec openweathermap.org et geo.api.gouv.fr', iconURL: 'https://openweathermap.org/themes/openweathermap/assets/img/mobile_app/android-app-top-banner.png' });
                     
@@ -296,6 +297,8 @@ client.on('interactionCreate', async interaction => {
                     weather.desc = "pluvieux";
                 }
 
+                getWeatherDataFromForNext24Hours(cityInfo.codesPostaux[0]).then(weather24Hours => {
+                
                 getForecastDataFrom(cityInfo.codesPostaux[0]).then(forecast => {
                     var emojiStateForecast = ":question:";
                     var stateText;
@@ -315,6 +318,7 @@ client.on('interactionCreate', async interaction => {
                         emojiStateForecast = ":cloud_rain:";
                         forecast.desc = "pluvieux";
                     }
+                    
                     getRandomFieldsPhoto()
                     .then(photoURL => {
                         WeatherEmbed = new MessageEmbed()
@@ -324,20 +328,83 @@ client.on('interactionCreate', async interaction => {
                         .setDescription('Laissez-moi vérifier en ' + depart_name + ` (${zipcode_depart}) Ville : ${cityInfo.nom}`)
                         .addFields(
                             { name: `Température actuelle dans le ${zipcode_depart}`, value : `:thermometer: ${weather.temp}°C ressenti ${weather.feels_temp} °C\r\n`},
-                            { name: `Météo actuelle dans le ${zipcode_depart}`, value : `Le temps est **${weather.desc}** ${emojiState}\r\n\r\n`})
+                            { name: `Météo actuelle dans le ${zipcode_depart}`, value : `Le temps est **${weather.desc}** ${emojiState}\r\n\r\n`, inline: true},
+                            { name: `\u200b`, value : `L'humidité est de **${weather.humidity}%**\r\n\r\n`, inline: true})
                         .setImage(photoURL)
                         .addFields(
                             { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `:thermometer: ${forecast.temp}°C ressenti ${forecast.feels_temp} °C\r\n`},
-                            { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `Le temps sera **${forecast.desc}** ${emojiStateForecast}`})
+                            { name: `Prévisions dans 6h dans le ${zipcode_depart}`, value : `Le temps sera **${forecast.desc}** ${emojiStateForecast}`, inline: true},
+                            { name: `\u200b`, value : `L'humidité sera de **${forecast.humidity}%**\r\n\r\n`, inline: true})
+                        .addFields(
+                            { name : `\u200b`, value : `\u200b`},
+                            { name: `Les 24H suivantes`, value : `:thermometer: ${weather24Hours[0].TEMP}°C \n
+                            Ressenti ${weather24Hours[0].FEELS_LIKE}°C\n
+                            ${weather24Hours[0].STATE} **${weather24Hours[0].DESC}** \n
+                            :droplet: ${weather24Hours[0].HUMIDITY}% \n
+                            :dash: ${weather24Hours[0].WINDSPEED}Km/h \n
+                             `, inline: true},
+                             { name: `\u200b`, value : `:thermometer: ${weather24Hours[1].TEMP}°C \n
+                             Ressenti ${weather24Hours[1].FEELS_LIKE}°C\n
+                             ${weather24Hours[1].STATE} **${weather24Hours[1].DESC}** \n
+                             :droplet: ${weather24Hours[1].HUMIDITY}% \n
+                             :dash: ${weather24Hours[1].WINDSPEED}Km/h \n
+                              `, inline: true},
+                              { name: `\u200b`, value : `:thermometer: ${weather24Hours[2].TEMP}°C \n
+                              Ressenti ${weather24Hours[2].FEELS_LIKE}°C\n
+                              ${weather24Hours[2].STATE} **${weather24Hours[2].DESC}** \n
+                              :droplet: ${weather24Hours[2].HUMIDITY}% \n
+                              :dash: ${weather24Hours[2].WINDSPEED}Km/h \n
+                               `, inline: true})
+                        .addFields(
+                                { name : `\u200b`, value : `\u200b`},
+                                { name: `Les 24H suivantes`, value : `
+                                :thermometer: ${weather24Hours[0].TEMP}°C \n
+                                :thermometer: ${weather24Hours[1].TEMP}°C \n
+                                :thermometer: ${weather24Hours[2].TEMP}°C \n
+                                :thermometer: ${weather24Hours[3].TEMP}°C \n
+                                :thermometer: ${weather24Hours[4].TEMP}°C \n
+                                :thermometer: ${weather24Hours[5].TEMP}°C \n
+                                :thermometer: ${weather24Hours[6].TEMP}°C \n
+                                :thermometer: ${weather24Hours[7].TEMP}°C \n
+                                 `, inline: true},
+                                 { name: `\u200b`, value : `
+                                 ${weather24Hours[0].STATE}\n
+                                 ${weather24Hours[1].STATE}\n
+                                    ${weather24Hours[2].STATE}\n
+                                    ${weather24Hours[3].STATE}\n
+                                    ${weather24Hours[4].STATE}\n
+                                    ${weather24Hours[5].STATE}\n
+                                    ${weather24Hours[6].STATE}\n
+                                    ${weather24Hours[7].STATE}\n
+                                  `, inline: true},
+                                  { name: `\u200b`, value : `
+                                  :droplet: ${weather24Hours[0].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[1].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[2].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[3].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[4].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[5].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[6].HUMIDITY}%\n
+                                  :droplet: ${weather24Hours[7].HUMIDITY}%\n
+                                   `, inline: true},
+                                   { name: `\u200b`, value : `
+                                   :dash: ${weather24Hours[0].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[1].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[2].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[3].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[4].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[5].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[6].WINDSPEED}Km/h\n
+                                   :dash: ${weather24Hours[7].WINDSPEED}Km/h\n
+                                    `, inline: true})
                         .setTimestamp()
                         .setFooter({ text: 'MonaBot météo fonctionne avec openweathermap.org et geo.api.gouv.fr', iconURL: 'https://openweathermap.org/themes/openweathermap/assets/img/mobile_app/android-app-top-banner.png' });
-                        
                         interaction.reply({ embeds: [WeatherEmbed]});
                     })
-                   
+                    
                 })
             })
-              
+        })
         })
 
 	} else if (commandName === 'pain') {
@@ -397,8 +464,41 @@ client.on('interactionCreate', async interaction => {
 // Login to Discord with your client's token
 client.login(token);
 
+/**
+ * Returns weather information for a given zipcode
+ * @param {*} depart_code zip code
+ * @returns 
+ */
+ async function getWeatherDataFromForNext24Hours(depart_code) {
+    let weatherNext24Hours = [];
+    return new Promise(resolve => {
+        fetch(`https://api.openweathermap.org/data/2.5/forecast?zip=${depart_code},fr&appid=${weather_api_key}&units=metric&lang=fr&cnt=8`)
+        .then(res => 
+            res.json()
+        )
+        .then(json => {
+            json.list.forEach(weather => {
+                weatherNext24Hours.push({
+                "TEMP": weather.main.temp,
+                "FEELS_LIKE" : weather.main.feels_like,
+                "HUMIDITY" : weather.main.humidity,
+                "STATE" : weather.weather[0].main,
+                "WINDSPEED" :weather.wind.speed,
+                "DESC" : weather.weather[0].description});
+            });
+            resolve(weatherNext24Hours);
 
+        }).catch(err => {
+            console.log(err);
+        })
+    });
+}
 
+/**
+ * Returns weather information for a given zipcode
+ * @param {*} depart_code zip code
+ * @returns 
+ */
 async function getWeatherDataFrom(depart_code) {
     var weatherInDepartement = {
         city:"",
@@ -406,6 +506,7 @@ async function getWeatherDataFrom(depart_code) {
         state:"",
         windspeed:"",
         feels_temp:"",
+        humidity:"",
         desc:""
     };
 
@@ -418,6 +519,7 @@ async function getWeatherDataFrom(depart_code) {
             weatherInDepartement.city = json.name;
             weatherInDepartement.temp = json.main.temp;
             weatherInDepartement.feels_temp = json.main.feels_like;
+            weatherInDepartement.humidity = json.main.humidity;
             weatherInDepartement.state = json.weather[0].main;
             weatherInDepartement.windspeed = json.wind.speed;
             weatherInDepartement.desc = json.weather[0].description;
@@ -428,13 +530,18 @@ async function getWeatherDataFrom(depart_code) {
     
 }
 
-
+/**
+ * Return the weather in 6 hours in the departement
+ * @param {*} depart_code zip code
+ * @returns 
+ */
 async function getForecastDataFrom(depart_code) {
     var forecastInDepartement = {
         temp:"",
         state:"",
         windspeed:"",
         feels_temp:"",
+        humidity:"",
         desc:""
     };
 
@@ -446,6 +553,7 @@ async function getForecastDataFrom(depart_code) {
         .then(json => {
             forecastInDepartement.temp = json.list[1].main.temp; //1 gets the weather in 6 hours
             forecastInDepartement.feels_temp = json.list[1].main.feels_like;
+            forecastInDepartement.humidity = json.list[1].main.humidity;
             forecastInDepartement.state = json.list[1].weather[0].main;
             forecastInDepartement.windspeed = json.list[1].wind.speed;
             forecastInDepartement.desc = json.list[1].weather[0].description;
@@ -522,7 +630,6 @@ async function sendJournalTo(userID) {
     console.log("creating the embed");
     let stringCrypto = "";
     cryptoValues.forEach((crypto) => {
-        console.log(crypto);
         stringCrypto += `**${crypto.NAME}** \r **Prix** = ${crypto.PRICE}$ \r ${crypto.PERCENTAGE}% \r Haut = ${crypto.HIGH} \r Bas = ${crypto.LOW}\r\n`
     })
     console.log(stringCrypto);
